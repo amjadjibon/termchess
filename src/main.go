@@ -85,8 +85,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := ""
+	s := "Terminal Chess\n\n"
+	s += "  A  B  C  D  E  F  G  H\n" // Column labels
+
 	for y, row := range m.board {
+		s += fmt.Sprintf("%d ", 8-y) // Row labels (in reverse)
 		for x, col := range row {
 			bg := darkWoodBg
 			if (x+y)%2 == 0 {
@@ -95,25 +98,27 @@ func (m model) View() string {
 
 			if x == m.cursorX && y == m.cursorY {
 				if m.selected {
-					s += fmt.Sprintf("%s(%s)%s ", bg, col, resetBg) // Highlight selected piece
+					s += fmt.Sprintf("%s(%s)%s", bg, col, resetBg) // Highlight selected piece
 				} else {
-					s += fmt.Sprintf("%s[%s]%s ", bg, col, resetBg) // Highlight cursor
+					s += fmt.Sprintf("%s[%s]%s", bg, col, resetBg) // Highlight cursor
 				}
 			} else {
-				s += fmt.Sprintf("%s %s %s ", bg, col, resetBg)
+				s += fmt.Sprintf("%s %s %s", bg, col, resetBg)
 			}
 		}
-		s += "\n"
+		s += fmt.Sprintf(" %d\n", 8-y) // Row labels on the right side (in reverse)
 	}
+	s += "  A  B  C  D  E  F  G  H\n" // Column labels
+
 	if m.selected {
-		s += fmt.Sprintf("Selected piece: %s\n", m.board[m.selectedY][m.selectedX])
+		s += fmt.Sprintf("\nSelected piece: %s\n", m.board[m.selectedY][m.selectedX])
 	}
 	s += "\nPress 'q' or 'Ctrl+C' to quit."
 	return s
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
