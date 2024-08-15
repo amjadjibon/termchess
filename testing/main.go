@@ -14,8 +14,9 @@ func main() {
 	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
 
 	// Define piece styles
-	whitePieceStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")) // White pieces
-	blackPieceStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")) // Black pieces
+	whitePieceLightSquareStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")) // White pieces on light squares
+	whitePieceDarkSquareStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))  // White pieces on dark squares 	// White pieces
+	blackPieceStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#000000"))            // Black pieces
 
 	// Chessboard setup with alternative larger symbols
 	board := [][]string{
@@ -25,21 +26,21 @@ func main() {
 		{" ", " ", " ", " ", " ", " ", " ", " "},
 		{" ", " ", " ", " ", " ", " ", " ", " "},
 		{" ", " ", " ", " ", " ", " ", " ", " "},
-		{whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙"), whitePieceStyle.Render("♙")}, // White pawns
-		{whitePieceStyle.Render("♖"), whitePieceStyle.Render("♘"), whitePieceStyle.Render("♗"), whitePieceStyle.Render("♕"), whitePieceStyle.Render("♔"), whitePieceStyle.Render("♗"), whitePieceStyle.Render("♘"), whitePieceStyle.Render("♖")}, // White pieces
+		{whitePieceLightSquareStyle.Render("♙"), whitePieceDarkSquareStyle.Render("♙"), whitePieceLightSquareStyle.Render("♙"), whitePieceDarkSquareStyle.Render("♙"), whitePieceLightSquareStyle.Render("♙"), whitePieceDarkSquareStyle.Render("♙"), whitePieceLightSquareStyle.Render("♙"), whitePieceDarkSquareStyle.Render("♙")}, // White pawns
+		{whitePieceDarkSquareStyle.Render("♖"), whitePieceLightSquareStyle.Render("♘"), whitePieceDarkSquareStyle.Render("♗"), whitePieceLightSquareStyle.Render("♕"), whitePieceDarkSquareStyle.Render("♔"), whitePieceLightSquareStyle.Render("♗"), whitePieceDarkSquareStyle.Render("♘"), whitePieceLightSquareStyle.Render("♖")}, // White pieces
 
 	}
 
 	// Generate styles for black and white squares with extra padding
 	blackSquare := lipgloss.NewStyle().
-		Background(lipgloss.Color("#000000")).
-		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#4e7837")).
+		Foreground(lipgloss.Color("#ffffff")).
 		Align(lipgloss.Center).
 		Padding(1, 3) // Adjusted padding for visual space
 
 	whiteSquare := lipgloss.NewStyle().
-		Background(lipgloss.Color("#FFFFFF")).
-		Foreground(lipgloss.Color("#000000")).
+		Background(lipgloss.Color("#ffffff")).
+		Foreground(lipgloss.Color("#4e7837")).
 		Align(lipgloss.Center).
 		Padding(1, 3) // Adjusted padding for visual space
 
