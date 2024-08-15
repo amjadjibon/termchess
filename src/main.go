@@ -7,6 +7,52 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
+)
+
+var (
+	// White pieces on light squares
+	whitePieceStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#000000"))
+
+	// Black pieces
+	blackPieceStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#000000"))
+
+	// Cursor on white square style
+	whiteCursorStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#e3d5ca")).
+				Foreground(lipgloss.Color("#000000")).
+				Align(lipgloss.Center).
+				Padding(1, 3)
+
+	// Cursor on black square style
+	blackCursorStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#81b583")).
+				Foreground(lipgloss.Color("#ffffff")).
+				Align(lipgloss.Center).
+				Padding(1, 3)
+
+	// Selected square style
+	selectedStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("21")).
+			Foreground(lipgloss.Color("21")).
+			Align(lipgloss.Center).
+			Padding(1, 3)
+
+	// Black square style
+	blackSquare = lipgloss.NewStyle().
+			Background(lipgloss.Color("#4e7837")).
+			Foreground(lipgloss.Color("#ffffff")).
+			Align(lipgloss.Center).
+			Padding(1, 3)
+
+	// White square style
+	whiteSquare = lipgloss.NewStyle().
+			Background(lipgloss.Color("#ffffff")).
+			Foreground(lipgloss.Color("#4e7837")).
+			Align(lipgloss.Center).
+			Padding(1, 3)
 )
 
 const (
@@ -14,10 +60,11 @@ const (
 )
 
 type model struct {
-	board                [8][8]string // Represents the chess board
-	cursorX, cursorY     int          // Cursor position
-	selectedX, selectedY int          // Position of the selected piece
-	selected             bool         // Whether a piece is selected
+	board                [][]string // Represents the chess board
+	cursorX, cursorY     int        // Cursor position on the board
+	selectedX, selectedY int        // Position of the selected piece
+	selectedPiece        string     // Piece that is selected
+	selected             bool       // Whether a piece is selected
 }
 
 func (m model) Init() tea.Cmd {
@@ -25,17 +72,53 @@ func (m model) Init() tea.Cmd {
 }
 
 func initialModel() model {
+	board := make([][]string, boardSize)
+	// Initialize the board with empty squares
+	for i := range board {
+		board[i] = make([]string, boardSize)
+		for j := range board[i] {
+			board[i][j] = " "
+		}
+	}
+
+	board[0][0] = blackPieceStyle.Render("♜")
+	board[0][1] = blackPieceStyle.Render("♞")
+	board[0][2] = blackPieceStyle.Render("♝")
+	board[0][3] = blackPieceStyle.Render("♛")
+	board[0][4] = blackPieceStyle.Render("♚")
+	board[0][5] = blackPieceStyle.Render("♝")
+	board[0][6] = blackPieceStyle.Render("♞")
+	board[0][7] = blackPieceStyle.Render("♜")
+
+	board[1][0] = blackPieceStyle.Render("♟")
+	board[1][1] = blackPieceStyle.Render("♟")
+	board[1][2] = blackPieceStyle.Render("♟")
+	board[1][3] = blackPieceStyle.Render("♟")
+	board[1][4] = blackPieceStyle.Render("♟")
+	board[1][5] = blackPieceStyle.Render("♟")
+	board[1][6] = blackPieceStyle.Render("♟")
+	board[1][7] = blackPieceStyle.Render("♟")
+
+	board[6][0] = whitePieceStyle.Render("♙")
+	board[6][1] = whitePieceStyle.Render("♙")
+	board[6][2] = whitePieceStyle.Render("♙")
+	board[6][3] = whitePieceStyle.Render("♙")
+	board[6][4] = whitePieceStyle.Render("♙")
+	board[6][5] = whitePieceStyle.Render("♙")
+	board[6][6] = whitePieceStyle.Render("♙")
+	board[6][7] = whitePieceStyle.Render("♙")
+
+	board[7][0] = whitePieceStyle.Render("♖")
+	board[7][1] = whitePieceStyle.Render("♘")
+	board[7][2] = whitePieceStyle.Render("♗")
+	board[7][3] = whitePieceStyle.Render("♕")
+	board[7][4] = whitePieceStyle.Render("♔")
+	board[7][5] = whitePieceStyle.Render("♗")
+	board[7][6] = whitePieceStyle.Render("♘")
+	board[7][7] = whitePieceStyle.Render("♖")
+
 	return model{
-		board: [8][8]string{
-			{"♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"},
-			{"♟", "♟", "♟", "♟", "♟", "♟", "♟", "♟"},
-			{" ", " ", " ", " ", " ", " ", " ", " "},
-			{" ", " ", " ", " ", " ", " ", " ", " "},
-			{" ", " ", " ", " ", " ", " ", " ", " "},
-			{" ", " ", " ", " ", " ", " ", " ", " "},
-			{"♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙"},
-			{"♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"},
-		},
+		board:    board,
 		cursorX:  0,
 		cursorY:  0,
 		selected: false,
@@ -43,9 +126,9 @@ func initialModel() model {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch msgType := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch msgType.String() {
 		case "left", "h":
 			if m.cursorX > 0 {
 				m.cursorX--
@@ -64,15 +147,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ":
 			if m.selected {
-				// Move the piece
-				m.board[m.cursorY][m.cursorX] = m.board[m.selectedY][m.selectedX]
+				m.board[m.cursorY][m.cursorX] = m.selectedPiece
 				m.board[m.selectedY][m.selectedX] = " "
 				m.selected = false
 			} else if m.board[m.cursorY][m.cursorX] != " " {
 				// Select a piece
 				m.selectedX = m.cursorX
 				m.selectedY = m.cursorY
+				m.selectedPiece = m.board[m.selectedY][m.selectedX]
 				m.selected = true
+
 			}
 		case "esc":
 			// Deselect the piece
@@ -81,68 +165,74 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
+
 	return m, nil
 }
 
 func (m model) View() string {
-	var b strings.Builder
+	re := lipgloss.NewRenderer(os.Stdout)
 
-	// Create styles
-	cursorStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("23"))
-
-	selectedStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("34"))
-
-	lightSquareStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#ffffff"))
-
-	darkSquareStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#4e7837"))
-
-	// labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-
-	// Build the board with labels
-	for y := 0; y < boardSize; y++ {
-		if y == 0 {
-			// Add the file labels (A-H) above the board
-			b.WriteString("  A B C D E F G H\n")
-		}
-		for x := 0; x < boardSize; x++ {
-			var style lipgloss.Style
-			if (x+y)%2 == 0 {
-				style = lightSquareStyle
-			} else {
-				style = darkSquareStyle
-			}
-
-			if x == m.cursorX && y == m.cursorY {
-				if m.selected {
-					style = selectedStyle
-				} else {
-					style = cursorStyle
+	// Create the table with alternating black and white squares
+	t := table.New().
+		Border(lipgloss.HiddenBorder()).
+		BorderRow(false).
+		BorderColumn(false).
+		Rows(m.board...).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if m.cursorX == col && m.cursorY == row-1 && m.selected {
+				return selectedStyle
+			} else if (row+col)%2 == 0 {
+				if m.cursorX == col && m.cursorY == row-1 {
+					return blackCursorStyle
 				}
+				return blackSquare
+			} else {
+				if m.cursorX == col && m.cursorY == row-1 {
+					return whiteCursorStyle
+				}
+				return whiteSquare
 			}
+		})
 
-			// Apply the style to the piece
-			b.WriteString(style.Render(" " + m.board[y][x] + " "))
-		}
-		// Add the rank label (1-8) at the end of each row
-		b.WriteString(fmt.Sprintf(" %d\n", y+1))
-	}
+	// Labels for ranks (1-8) and files (A-H)
+	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
+	ranks := labelStyle.Render(strings.Join([]string{"\n    A", "B", "C", "D", "E", "F", "G", "H"}, "      "))
+	files := strings.Join([]string{
+		labelStyle.Render("\n1"),
+		labelStyle.Render("\n\n2"),
+		labelStyle.Render("\n\n3"),
+		labelStyle.Render("\n\n4"),
+		labelStyle.Render("\n\n5"),
+		labelStyle.Render("\n\n6"),
+		labelStyle.Render("\n\n7"),
+		labelStyle.Render("\n\n8"),
+	}, "\n")
 
+	footer := ranks
+
+	footerSelectedPiece := lipgloss.NewStyle().
+		Background(lipgloss.Color("23")).
+		Foreground(lipgloss.Color("23")).
+		Align(lipgloss.Center)
 	if m.selected {
-		b.WriteString(fmt.Sprintf("\nSelected piece: %s\n", m.board[m.selectedY][m.selectedX]))
+		footer += fmt.Sprintf("\nSelected piece: %s\n", footerSelectedPiece.Render(m.selectedPiece))
 	}
-	b.WriteString("\nPress 'q' or 'Ctrl+C' to quit.")
+	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
 
-	return b.String()
+	return lipgloss.JoinVertical(
+		lipgloss.Right,
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			lipgloss.JoinVertical(lipgloss.Left, "", files),
+			t.Render(),
+		),
+	) + footer
 }
 
 func main() {
+	// Start the TUI program
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 }
