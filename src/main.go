@@ -198,14 +198,14 @@ func (m model) View() string {
 	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
 	ranks := labelStyle.Render(strings.Join([]string{"\n    A", "B", "C", "D", "E", "F", "G", "H"}, "      "))
 	files := strings.Join([]string{
-		labelStyle.Render("\n1"),
-		labelStyle.Render("\n\n2"),
-		labelStyle.Render("\n\n3"),
-		labelStyle.Render("\n\n4"),
-		labelStyle.Render("\n\n5"),
-		labelStyle.Render("\n\n6"),
+		labelStyle.Render("\n8"),
 		labelStyle.Render("\n\n7"),
-		labelStyle.Render("\n\n8"),
+		labelStyle.Render("\n\n6"),
+		labelStyle.Render("\n\n5"),
+		labelStyle.Render("\n\n4"),
+		labelStyle.Render("\n\n3"),
+		labelStyle.Render("\n\n2"),
+		labelStyle.Render("\n\n1"),
 	}, "\n")
 
 	footer := ranks
