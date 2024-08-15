@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 const (
-	darkWoodBg  = "\033[48;5;130m" // Dark wood background (Brownish)
-	lightWoodBg = "\033[48;5;137m" // Light wood background (Yellowish-brown)
-	resetBg     = "\033[0m"        // Reset background
+	boardSize = 8
 )
 
 type model struct {
@@ -51,7 +51,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursorX--
 			}
 		case "right", "l":
-			if m.cursorX < 7 {
+			if m.cursorX < boardSize-1 {
 				m.cursorX++
 			}
 		case "up", "k":
@@ -59,7 +59,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursorY--
 			}
 		case "down", "j":
-			if m.cursorY < 7 {
+			if m.cursorY < boardSize-1 {
 				m.cursorY++
 			}
 		case "enter", " ":
@@ -85,36 +85,58 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "Terminal Chess\n\n"
-	s += "  A  B  C  D  E  F  G  H\n" // Column labels
+	var b strings.Builder
 
-	for y, row := range m.board {
-		s += fmt.Sprintf("%d ", 8-y) // Row labels (in reverse)
-		for x, col := range row {
-			bg := darkWoodBg
+	// Create styles
+	cursorStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("23"))
+
+	selectedStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("34"))
+
+	lightSquareStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#ffffff"))
+
+	darkSquareStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#4e7837"))
+
+	// labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+
+	// Build the board with labels
+	for y := 0; y < boardSize; y++ {
+		if y == 0 {
+			// Add the file labels (A-H) above the board
+			b.WriteString("  A B C D E F G H\n")
+		}
+		for x := 0; x < boardSize; x++ {
+			var style lipgloss.Style
 			if (x+y)%2 == 0 {
-				bg = lightWoodBg
+				style = lightSquareStyle
+			} else {
+				style = darkSquareStyle
 			}
 
 			if x == m.cursorX && y == m.cursorY {
 				if m.selected {
-					s += fmt.Sprintf("%s(%s)%s", bg, col, resetBg) // Highlight selected piece
+					style = selectedStyle
 				} else {
-					s += fmt.Sprintf("%s[%s]%s", bg, col, resetBg) // Highlight cursor
+					style = cursorStyle
 				}
-			} else {
-				s += fmt.Sprintf("%s %s %s", bg, col, resetBg)
 			}
+
+			// Apply the style to the piece
+			b.WriteString(style.Render(" " + m.board[y][x] + " "))
 		}
-		s += fmt.Sprintf(" %d\n", 8-y) // Row labels on the right side (in reverse)
+		// Add the rank label (1-8) at the end of each row
+		b.WriteString(fmt.Sprintf(" %d\n", y+1))
 	}
-	s += "  A  B  C  D  E  F  G  H\n" // Column labels
 
 	if m.selected {
-		s += fmt.Sprintf("\nSelected piece: %s\n", m.board[m.selectedY][m.selectedX])
+		b.WriteString(fmt.Sprintf("\nSelected piece: %s\n", m.board[m.selectedY][m.selectedX]))
 	}
-	s += "\nPress 'q' or 'Ctrl+C' to quit."
-	return s
+	b.WriteString("\nPress 'q' or 'Ctrl+C' to quit.")
+
+	return b.String()
 }
 
 func main() {
