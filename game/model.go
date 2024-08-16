@@ -96,17 +96,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ":
 			if m.selected {
-				m.board[m.cursorY][m.cursorX] = m.selectedPiece
-				m.board[m.selectedY][m.selectedX] = Empty
-				m.currentPlayer = m.currentPlayer.Switch()
-				m.selected = false
+				if m.currentPlayer == PlayerWhite && m.selectedPiece.IsWhite() ||
+					m.currentPlayer == PlayerBlack && m.selectedPiece.IsBlack() {
+					m.board[m.cursorY][m.cursorX] = m.selectedPiece
+					m.board[m.selectedY][m.selectedX] = Empty
+					m.currentPlayer = m.currentPlayer.Switch()
+					m.selected = false
+				}
 			} else if m.board[m.cursorY][m.cursorX] != Empty {
-				// Select a piece
-				m.selectedX = m.cursorX
-				m.selectedY = m.cursorY
-				m.selectedPiece = m.board[m.selectedY][m.selectedX]
-				m.selected = true
-
+				if m.currentPlayer == PlayerWhite && m.board[m.cursorY][m.cursorX].IsWhite() ||
+					m.currentPlayer == PlayerBlack && m.board[m.cursorY][m.cursorX].IsBlack() {
+					m.selectedX = m.cursorX
+					m.selectedY = m.cursorY
+					m.selectedPiece = m.board[m.selectedY][m.selectedX]
+					m.selected = true
+				}
 			}
 		case "esc":
 			// Deselect the piece
