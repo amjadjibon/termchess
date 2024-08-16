@@ -77,7 +77,7 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) View() string {
 	re := lipgloss.NewRenderer(os.Stdout)
 
-	// Create the table with alternating black and white squares
+	// create the table with alternating black and white squares
 	t := table.New().
 		Border(lipgloss.HiddenBorder()).
 		BorderRow(false).
@@ -198,14 +198,7 @@ func (m *Model) handleSelectOrMove() {
 }
 
 func (m *Model) canApplyMove() bool {
-	if m.currentPlayer == PlayerWhite && !m.selectedPiece.IsWhite() {
-		return false
-	}
-
-	if m.currentPlayer == PlayerBlack && !m.selectedPiece.IsBlack() {
-		return false
-	}
-
+	// prevent moving a piece to the same place
 	if m.cursorX == m.selectedX && m.cursorY == m.selectedY {
 		return false
 	}
@@ -225,15 +218,14 @@ func (m *Model) applyMove() {
 }
 
 func (m *Model) canSelect() bool {
+	// no player can select an empty space
 	if m.board[m.cursorY][m.cursorX] == Empty {
 		return false
 	}
 
-	if m.currentPlayer == PlayerWhite && !m.board[m.cursorY][m.cursorX].IsWhite() {
-		return false
-	}
-
-	if m.currentPlayer == PlayerBlack && !m.board[m.cursorY][m.cursorX].IsBlack() {
+	// ensure the current player can only select their own pieces
+	if (m.currentPlayer == PlayerWhite && m.board[m.cursorY][m.cursorX].IsBlack()) ||
+		(m.currentPlayer == PlayerBlack && m.board[m.cursorY][m.cursorX].IsWhite()) {
 		return false
 	}
 
