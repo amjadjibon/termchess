@@ -206,6 +206,10 @@ func (m *Model) canApplyMove() bool {
 		return false
 	}
 
+	if m.cursorX == m.selectedX && m.cursorY == m.selectedY {
+		return false
+	}
+
 	return true
 }
 
