@@ -53,14 +53,22 @@ func (p Piece) String() string {
 	return " "
 }
 
-// func (p Piece) Player() Player {
-// 	if p >= 1 && p <= 6 {
-// 		return PlayerWhite
-// 	} else if p >= 7 && p <= 12 {
-// 		return PlayerBlack
-// 	}
-// 	panic("should not happen")
-// }
+func (p Piece) Name() string {
+	switch p {
+	case WhiteRook, BlackRook:
+		return "R"
+	case WhiteKnight, BlackKnight:
+		return "N"
+	case WhiteBishop, BlackBishop:
+		return "B"
+	case WhiteQueen, BlackQueen:
+		return "Q"
+	case WhiteKing, BlackKing:
+		return "K"
+	default:
+		return ""
+	}
+}
 
 func (p Piece) IsWhite() bool {
 	return p >= 1 && p <= 6

@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
+	"github.com/notnil/chess"
 )
 
 const (
@@ -58,6 +59,7 @@ type Model struct {
 	selectedPiece        Piece // Piece that is selected
 	selected             bool  // Whether a piece is selected
 	currentPlayer        Player
+	gameEngine           *chess.Game
 }
 
 func InitialModel() *Model {
@@ -67,6 +69,7 @@ func InitialModel() *Model {
 		cursorY:       0,
 		selected:      false,
 		currentPlayer: PlayerWhite,
+		gameEngine:    chess.NewGame(chess.UseNotation(chess.UCINotation{})),
 	}
 }
 
@@ -99,9 +102,9 @@ func (m *Model) View() string {
 			}
 		})
 
-	// Labels for ranks (1-8) and files (A-H)
+	// Labels for ranks (1-8) and files (a-h)
 	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
-	ranks := labelStyle.Render(strings.Join([]string{"\n      A", "B", "C", "D", "E", "F", "G", "H"}, "      "))
+	ranks := labelStyle.Render(strings.Join([]string{"\n      a", "b", "c", "d", "e", "f", "g", "h"}, "      "))
 	files := strings.Join([]string{
 		labelStyle.Render("\n 8"),
 		labelStyle.Render("\n\n 7"),
@@ -126,6 +129,7 @@ func (m *Model) View() string {
 
 	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
 	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
+	footer += "\n" + m.gameEngine.String()
 
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
@@ -213,7 +217,9 @@ func (m *Model) canApplyMove() bool {
 }
 
 func (m *Model) applyMove() {
-	if !m.canApplyMove() {
+	from := coordsToUCI(m.selectedX, m.selectedY)
+	to := coordsToUCI(m.cursorX, m.cursorY)
+	if err := m.gameEngine.MoveStr(from + to); err != nil {
 		return
 	}
 
@@ -247,4 +253,10 @@ func (m *Model) selectPiece() {
 	m.selectedY = m.cursorY
 	m.selectedPiece = m.board[m.selectedY][m.selectedX]
 	m.selected = true
+}
+
+func coordsToUCI(x, y int) string {
+	files := "abcdefgh"
+	ranks := "87654321" // reversed for standard board setup
+	return string(files[x]) + string(ranks[y])
 }
