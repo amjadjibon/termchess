@@ -65,8 +65,8 @@ type Model struct {
 func InitialModel() *Model {
 	return &Model{
 		board:         NewBoard(),
-		cursorX:       0,
-		cursorY:       0,
+		cursorX:       4, // Column 'e'
+		cursorY:       6, // Row '2' (reversed ranks: 6 for row 2)
 		selected:      false,
 		currentPlayer: PlayerWhite,
 		gameEngine:    chess.NewGame(chess.UseNotation(chess.UCINotation{})),
