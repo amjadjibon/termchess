@@ -60,12 +60,8 @@ type Model struct {
 	currentPlayer        Player
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
-func InitialModel() Model {
-	return Model{
+func InitialModel() *Model {
+	return &Model{
 		board:         NewBoard(),
 		cursorX:       0,
 		cursorY:       0,
@@ -74,56 +70,11 @@ func InitialModel() Model {
 	}
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msgType := msg.(type) {
-	case tea.KeyMsg:
-		switch msgType.String() {
-		case "left", "h":
-			if m.cursorX > 0 {
-				m.cursorX--
-			}
-		case "right", "l":
-			if m.cursorX < boardSize-1 {
-				m.cursorX++
-			}
-		case "up", "k":
-			if m.cursorY > 0 {
-				m.cursorY--
-			}
-		case "down", "j":
-			if m.cursorY < boardSize-1 {
-				m.cursorY++
-			}
-		case "enter", " ":
-			if m.selected {
-				if m.currentPlayer == PlayerWhite && m.selectedPiece.IsWhite() ||
-					m.currentPlayer == PlayerBlack && m.selectedPiece.IsBlack() {
-					m.board[m.cursorY][m.cursorX] = m.selectedPiece
-					m.board[m.selectedY][m.selectedX] = Empty
-					m.currentPlayer = m.currentPlayer.Switch()
-					m.selected = false
-				}
-			} else if m.board[m.cursorY][m.cursorX] != Empty {
-				if m.currentPlayer == PlayerWhite && m.board[m.cursorY][m.cursorX].IsWhite() ||
-					m.currentPlayer == PlayerBlack && m.board[m.cursorY][m.cursorX].IsBlack() {
-					m.selectedX = m.cursorX
-					m.selectedY = m.cursorY
-					m.selectedPiece = m.board[m.selectedY][m.selectedX]
-					m.selected = true
-				}
-			}
-		case "esc":
-			// Deselect the piece
-			m.selected = false
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		}
-	}
-
-	return m, nil
+func (m *Model) Init() tea.Cmd {
+	return nil
 }
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	re := lipgloss.NewRenderer(os.Stdout)
 
 	// Create the table with alternating black and white squares
@@ -184,4 +135,114 @@ func (m Model) View() string {
 			t.Render(),
 		),
 	) + footer
+}
+
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msgType := msg.(type) {
+	case tea.KeyMsg:
+		switch msgType.String() {
+		case "left", "h":
+			m.moveCursorLeft()
+		case "right", "l":
+			m.moveCursorRight()
+		case "up", "k":
+			m.moveCursorUp()
+		case "down", "j":
+			m.moveCursorDown()
+		case "enter", " ":
+			m.handleSelectOrMove()
+		case "esc":
+			m.deselectPiece()
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		}
+	}
+
+	return m, nil
+}
+
+func (m *Model) moveCursorLeft() {
+	if m.cursorX > 0 {
+		m.cursorX--
+	}
+}
+
+func (m *Model) moveCursorRight() {
+	if m.cursorX < boardSize-1 {
+		m.cursorX++
+	}
+}
+
+func (m *Model) moveCursorUp() {
+	if m.cursorY > 0 {
+		m.cursorY--
+	}
+}
+
+func (m *Model) moveCursorDown() {
+	if m.cursorY < boardSize-1 {
+		m.cursorY++
+	}
+}
+
+func (m *Model) deselectPiece() {
+	m.selected = false
+}
+
+func (m *Model) handleSelectOrMove() {
+	if m.selected {
+		m.applyMove()
+	} else {
+		m.selectPiece()
+	}
+}
+
+func (m *Model) canApplyMove() bool {
+	if m.currentPlayer == PlayerWhite && !m.selectedPiece.IsWhite() {
+		return false
+	}
+
+	if m.currentPlayer == PlayerBlack && !m.selectedPiece.IsBlack() {
+		return false
+	}
+
+	return true
+}
+
+func (m *Model) applyMove() {
+	if !m.canApplyMove() {
+		return
+	}
+
+	m.board[m.cursorY][m.cursorX] = m.selectedPiece
+	m.board[m.selectedY][m.selectedX] = Empty
+	m.currentPlayer = m.currentPlayer.Switch()
+	m.selected = false
+}
+
+func (m *Model) canSelect() bool {
+	if m.board[m.cursorY][m.cursorX] == Empty {
+		return false
+	}
+
+	if m.currentPlayer == PlayerWhite && !m.board[m.cursorY][m.cursorX].IsWhite() {
+		return false
+	}
+
+	if m.currentPlayer == PlayerBlack && !m.board[m.cursorY][m.cursorX].IsBlack() {
+		return false
+	}
+
+	return true
+}
+
+func (m *Model) selectPiece() {
+	if !m.canSelect() {
+		return
+	}
+
+	m.selectedX = m.cursorX
+	m.selectedY = m.cursorY
+	m.selectedPiece = m.board[m.selectedY][m.selectedX]
+	m.selected = true
 }
