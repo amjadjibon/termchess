@@ -57,6 +57,7 @@ type Model struct {
 	selectedX, selectedY int   // Position of the selected piece
 	selectedPiece        Piece // Piece that is selected
 	selected             bool  // Whether a piece is selected
+	currentPlayer        Player
 }
 
 func (m Model) Init() tea.Cmd {
@@ -65,10 +66,11 @@ func (m Model) Init() tea.Cmd {
 
 func InitialModel() Model {
 	return Model{
-		board:    NewBoard(),
-		cursorX:  0,
-		cursorY:  0,
-		selected: false,
+		board:         NewBoard(),
+		cursorX:       0,
+		cursorY:       0,
+		selected:      false,
+		currentPlayer: PlayerWhite,
 	}
 }
 
@@ -96,6 +98,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selected {
 				m.board[m.cursorY][m.cursorX] = m.selectedPiece
 				m.board[m.selectedY][m.selectedX] = Empty
+				m.currentPlayer = m.currentPlayer.Switch()
 				m.selected = false
 			} else if m.board[m.cursorY][m.cursorX] != Empty {
 				// Select a piece
@@ -143,29 +146,31 @@ func (m Model) View() string {
 
 	// Labels for ranks (1-8) and files (A-H)
 	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
-	ranks := labelStyle.Render(strings.Join([]string{"\n    A", "B", "C", "D", "E", "F", "G", "H"}, "      "))
+	ranks := labelStyle.Render(strings.Join([]string{"\n      A", "B", "C", "D", "E", "F", "G", "H"}, "      "))
 	files := strings.Join([]string{
-		labelStyle.Render("\n8"),
-		labelStyle.Render("\n\n7"),
-		labelStyle.Render("\n\n6"),
-		labelStyle.Render("\n\n5"),
-		labelStyle.Render("\n\n4"),
-		labelStyle.Render("\n\n3"),
-		labelStyle.Render("\n\n2"),
-		labelStyle.Render("\n\n1"),
+		labelStyle.Render("\n 8"),
+		labelStyle.Render("\n\n 7"),
+		labelStyle.Render("\n\n 6"),
+		labelStyle.Render("\n\n 5"),
+		labelStyle.Render("\n\n 4"),
+		labelStyle.Render("\n\n 3"),
+		labelStyle.Render("\n\n 2"),
+		labelStyle.Render("\n\n 1"),
 	}, "\n")
 
 	header := labelStyle.Render("                      Terminal Chess\n")
 
 	footer := ranks
 	footerSelectedPiece := lipgloss.NewStyle().
-		Background(lipgloss.Color("23")).
-		Foreground(lipgloss.Color("23")).
-		Align(lipgloss.Center)
+		Background(lipgloss.Color("#ffffff")).
+		Foreground(lipgloss.Color("#ffffff"))
 	if m.selected {
-		footer += fmt.Sprintf("\nSelected piece: %s\n", footerSelectedPiece.Render(m.selectedPiece.String()))
+		footer += fmt.Sprintf("\nSelected piece: %s\n",
+			footerSelectedPiece.Render(m.selectedPiece.Render()))
 	}
-	footer += "\n\n\nPress 'q' or 'Ctrl+C' to quit.\n"
+
+	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
+	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
 
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
