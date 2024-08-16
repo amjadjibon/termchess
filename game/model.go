@@ -203,6 +203,12 @@ func (m *Model) canApplyMove() bool {
 		return false
 	}
 
+	// prevent moving to a square occupied by a piece of the same color
+	if m.selectedPiece.IsWhite() && m.board[m.cursorY][m.cursorX].IsWhite() ||
+		m.selectedPiece.IsBlack() && m.board[m.cursorY][m.cursorX].IsBlack() {
+		return false
+	}
+
 	return true
 }
 
