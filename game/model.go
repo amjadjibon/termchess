@@ -219,13 +219,52 @@ func (m *Model) canApplyMove() bool {
 func (m *Model) applyMove() {
 	from := coordsToUCI(m.selectedX, m.selectedY)
 	to := coordsToUCI(m.cursorX, m.cursorY)
-	if err := m.gameEngine.MoveStr(from + to); err != nil {
+	move := from + to
+	if err := m.gameEngine.MoveStr(move); err != nil {
+		return
+	}
+
+	defer func() {
+		m.currentPlayer = m.currentPlayer.Switch()
+		m.selected = false
+	}()
+
+	// Handle castling
+	if move == "e1g1" {
+		m.board[7][6] = m.board[7][4] // Move the king
+		m.board[7][4] = Empty
+		m.board[7][5] = m.board[7][7] // Move the rook
+		m.board[7][7] = Empty
+		m.currentPlayer = m.currentPlayer.Switch()
+		return
+	}
+
+	if move == "e1c1" {
+		m.board[7][2] = m.board[7][4] // Move the king
+		m.board[7][4] = Empty
+		m.board[7][3] = m.board[7][0] // Move the rook
+		m.board[7][0] = Empty
+		return
+	}
+
+	if move == "e8g8" {
+		m.board[0][6] = m.board[0][4] // Move the king
+		m.board[0][4] = Empty
+		m.board[0][5] = m.board[0][7] // Move the rook
+		m.board[0][7] = Empty
+		return
+	}
+
+	if move == "e8c8" {
+		m.board[0][2] = m.board[0][4] // Move the king
+		m.board[0][4] = Empty
+		m.board[0][3] = m.board[0][0] // Move the rook
+		m.board[0][0] = Empty
 		return
 	}
 
 	m.board[m.cursorY][m.cursorX] = m.selectedPiece
 	m.board[m.selectedY][m.selectedX] = Empty
-	m.currentPlayer = m.currentPlayer.Switch()
 	m.selected = false
 }
 
