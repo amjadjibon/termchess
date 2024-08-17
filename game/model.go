@@ -53,11 +53,11 @@ var (
 )
 
 type Model struct {
-	board                Board // Represents the chess board
-	cursorX, cursorY     int   // Cursor position on the board
-	selectedX, selectedY int   // Position of the selected piece
-	selectedPiece        Piece // Piece that is selected
-	selected             bool  // Whether a piece is selected
+	board                *Board // Represents the chess board
+	cursorX, cursorY     int    // Cursor position on the board
+	selectedX, selectedY int    // Position of the selected piece
+	selectedPiece        Piece  // Piece that is selected
+	selected             bool   // Whether a piece is selected
 	currentPlayer        Player
 	gameEngine           *chess.Game
 }
@@ -208,8 +208,8 @@ func (m *Model) canApplyMove() bool {
 	}
 
 	// prevent moving to a square occupied by a piece of the same color
-	if m.selectedPiece.IsWhite() && m.board[m.cursorY][m.cursorX].IsWhite() ||
-		m.selectedPiece.IsBlack() && m.board[m.cursorY][m.cursorX].IsBlack() {
+	if m.selectedPiece.IsWhite() && m.board.Get(m.cursorY, m.cursorX).IsWhite() ||
+		m.selectedPiece.IsBlack() && m.board.Get(m.cursorY, m.cursorX).IsBlack() {
 		return false
 	}
 
@@ -229,54 +229,40 @@ func (m *Model) applyMove() {
 		m.selected = false
 	}()
 
-	// Handle castling
-	if move == "e1g1" {
-		m.board[7][6] = m.board[7][4] // Move the king
-		m.board[7][4] = Empty
-		m.board[7][5] = m.board[7][7] // Move the rook
-		m.board[7][7] = Empty
-		m.currentPlayer = m.currentPlayer.Switch()
+	switch move {
+	case "e1g1": // White king-side castling
+		m.board.Replace(7, 4, 7, 6) // Move the king
+		m.board.Replace(7, 7, 7, 5) // Move the rook
+		return
+	case "e1c1": // White queen-side castling
+		m.board.Replace(7, 4, 7, 2) // Move the king
+		m.board.Replace(7, 0, 7, 3) // Move the rook
+		return
+	case "e8g8": // Black king-side castling
+		m.board.Replace(0, 4, 0, 6) // Move the king
+		m.board.Replace(0, 7, 0, 5) // Move the rook
+		return
+	case "e8c8": // Black queen-side castling
+		m.board.Replace(0, 4, 0, 2) // Move the king
+		m.board.Replace(0, 0, 0, 3) // Move the rook
 		return
 	}
 
-	if move == "e1c1" {
-		m.board[7][2] = m.board[7][4] // Move the king
-		m.board[7][4] = Empty
-		m.board[7][3] = m.board[7][0] // Move the rook
-		m.board[7][0] = Empty
-		return
-	}
-
-	if move == "e8g8" {
-		m.board[0][6] = m.board[0][4] // Move the king
-		m.board[0][4] = Empty
-		m.board[0][5] = m.board[0][7] // Move the rook
-		m.board[0][7] = Empty
-		return
-	}
-
-	if move == "e8c8" {
-		m.board[0][2] = m.board[0][4] // Move the king
-		m.board[0][4] = Empty
-		m.board[0][3] = m.board[0][0] // Move the rook
-		m.board[0][0] = Empty
-		return
-	}
-
-	m.board[m.cursorY][m.cursorX] = m.selectedPiece
-	m.board[m.selectedY][m.selectedX] = Empty
+	// Regular move
+	m.board.Replace(m.selectedY, m.selectedX, m.cursorY, m.cursorX)
+	m.board.grid[m.selectedY][m.selectedX] = Empty
 	m.selected = false
 }
 
 func (m *Model) canSelect() bool {
 	// no player can select an empty space
-	if m.board[m.cursorY][m.cursorX] == Empty {
+	if m.board.Get(m.cursorY, m.cursorX) == Empty {
 		return false
 	}
 
 	// ensure the current player can only select their own pieces
-	if (m.currentPlayer == PlayerWhite && m.board[m.cursorY][m.cursorX].IsBlack()) ||
-		(m.currentPlayer == PlayerBlack && m.board[m.cursorY][m.cursorX].IsWhite()) {
+	if (m.currentPlayer == PlayerWhite && m.board.Get(m.cursorY, m.cursorX).IsBlack()) ||
+		(m.currentPlayer == PlayerBlack && m.board.Get(m.cursorY, m.cursorX).IsWhite()) {
 		return false
 	}
 
@@ -290,7 +276,7 @@ func (m *Model) selectPiece() {
 
 	m.selectedX = m.cursorX
 	m.selectedY = m.cursorY
-	m.selectedPiece = m.board[m.selectedY][m.selectedX]
+	m.selectedPiece = m.board.Get(m.selectedY, m.selectedX)
 	m.selected = true
 }
 
