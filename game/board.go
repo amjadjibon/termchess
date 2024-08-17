@@ -8,6 +8,10 @@ func (b *Board) Get(x, y int) Piece {
 	return b.grid[x][y]
 }
 
+func (b *Board) Set(x, y int, p Piece) {
+	b.grid[x][y] = p
+}
+
 func (b *Board) Replace(fromX, fromY int, toX, toY int) {
 	b.grid[toX][toY] = b.grid[fromX][fromY]
 	b.grid[fromX][fromY] = Empty

@@ -220,6 +220,27 @@ func (m *Model) applyMove() {
 	from := coordsToUCI(m.selectedX, m.selectedY)
 	to := coordsToUCI(m.cursorX, m.cursorY)
 	move := from + to
+
+	// Handle pawn promotion
+	if canPiecePromote(m.selectedPiece, m.cursorY) {
+		move += "q"
+		if err := m.gameEngine.MoveStr(move); err != nil {
+			return
+		}
+
+		// Update the board manually based on the promotion
+		m.board.Set(m.selectedY, m.selectedX, Empty)
+		if m.selectedPiece.IsWhite() {
+			m.board.Set(m.cursorY, m.cursorX, WhiteQueen)
+		} else {
+			m.board.Set(m.cursorY, m.cursorX, BlackQueen)
+		}
+
+		m.selected = false
+		m.currentPlayer = m.currentPlayer.Switch()
+		return
+	}
+
 	if err := m.gameEngine.MoveStr(move); err != nil {
 		return
 	}
@@ -284,4 +305,18 @@ func coordsToUCI(x, y int) string {
 	files := "abcdefgh"
 	ranks := "87654321" // reversed for standard board setup
 	return string(files[x]) + string(ranks[y])
+}
+
+// Check if the selected piece is a pawn that reaches the promotion rank
+func canPiecePromote(piece Piece, targetY int) bool {
+	if !piece.IsPawn() {
+		return false
+	}
+
+	if (piece.IsWhite() && targetY == 0) ||
+		(piece.IsBlack() && targetY == 7) {
+		return true
+	}
+
+	return false
 }
