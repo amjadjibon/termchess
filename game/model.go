@@ -26,6 +26,7 @@ type Model struct {
 	currentPlayer        Player
 	gameEngine           *chess.Game
 	mousePosition        string
+	enPassantTarget      string
 }
 
 func InitialModel() *Model {
@@ -202,6 +203,17 @@ func (m *Model) applyMove() {
 	to := coordsToUCI(m.cursorX, m.cursorY)
 	move := from + to
 
+	// Handle en passant
+	if m.selectedPiece.IsPawn() && m.enPassantTarget == to {
+		if m.selectedPiece.IsWhite() && m.cursorY == 2 {
+			m.board.grid[3][m.cursorX] = Empty // Remove captured black pawn
+			m.enPassantTarget = ""
+		} else if m.selectedPiece.IsBlack() && m.cursorY == 5 {
+			m.board.grid[4][m.cursorX] = Empty // Remove captured white pawn
+			m.enPassantTarget = ""
+		}
+	}
+
 	// Handle pawn promotion
 	if canPiecePromote(m.selectedPiece, m.cursorY) {
 		move += m.handlePromotion()
@@ -215,6 +227,10 @@ func (m *Model) applyMove() {
 		m.currentPlayer = m.currentPlayer.Switch()
 		m.selected = false
 	}()
+
+	if m.selectedPiece.IsPawn() && abs(m.selectedY-m.cursorY) == 2 {
+		m.enPassantTarget = coordsToUCI(m.cursorX, (m.selectedY+m.cursorY)/2)
+	}
 
 	switch move {
 	case "e1g1": // White king-side castling
@@ -392,4 +408,11 @@ func (m *Model) handleMouseClick(x, y int) {
 		m.cursorY = row
 		m.handleSelectOrMove()
 	}
+}
+
+func abs(a int) int {
+	if a > 0 {
+		return a
+	}
+	return -a
 }
