@@ -5,8 +5,8 @@ Todo
 - [x] Setup board
 - [ ] Enforce chess rules
   * [x] Piece positions and movements using [Engine](https://github.com/notnil/chess)
-  * [x] Castle
-  * [ ] Pawn promotion (only queen works now)
+  * [ ] Castle (bug: add a check if it's castle or regular move)
+  * [x] Pawn promotion
   * [ ] En Passant
 - [ ] Save in `PGN` format (UCI + Algebraic)
 
