@@ -232,23 +232,12 @@ func (m *Model) applyMove() {
 		m.enPassantTarget = coordsToUCI(m.cursorX, (m.selectedY+m.cursorY)/2)
 	}
 
-	switch move {
-	case "e1g1": // White king-side castling
-		m.board.Replace(7, 4, 7, 6) // Move the king
-		m.board.Replace(7, 7, 7, 5) // Move the rook
-		return
-	case "e1c1": // White queen-side castling
-		m.board.Replace(7, 4, 7, 2) // Move the king
-		m.board.Replace(7, 0, 7, 3) // Move the rook
-		return
-	case "e8g8": // Black king-side castling
-		m.board.Replace(0, 4, 0, 6) // Move the king
-		m.board.Replace(0, 7, 0, 5) // Move the rook
-		return
-	case "e8c8": // Black queen-side castling
-		m.board.Replace(0, 4, 0, 2) // Move the king
-		m.board.Replace(0, 0, 0, 3) // Move the rook
-		return
+	if kingRow, rookCol, kingNewCol, rookNewCol, valid := getCastlingPositions(move); valid {
+		if m.selectedPiece.IsKing() {
+			m.board.Replace(kingRow, rookCol, kingRow, kingNewCol) // Move the king
+			m.board.Replace(kingRow, rookCol, kingRow, rookNewCol) // Move the rook
+			return
+		}
 	}
 
 	// Regular move
@@ -408,6 +397,20 @@ func (m *Model) handleMouseClick(x, y int) {
 		m.cursorY = row
 		m.handleSelectOrMove()
 	}
+}
+
+func getCastlingPositions(move string) (kingRow, rookCol, kingNewCol, rookNewCol int, valid bool) {
+	switch move {
+	case "e1g1": // White king-side castling
+		return 7, 7, 6, 5, true
+	case "e1c1": // White queen-side castling
+		return 7, 0, 2, 3, true
+	case "e8g8": // Black king-side castling
+		return 0, 7, 6, 5, true
+	case "e8c8": // Black queen-side castling
+		return 0, 0, 2, 3, true
+	}
+	return 0, 0, 0, 0, false // Invalid move, returns false
 }
 
 func abs(a int) int {
