@@ -25,7 +25,6 @@ type Model struct {
 	selected             bool   // Whether a piece is selected
 	currentPlayer        Player
 	gameEngine           *chess.Game
-	mousePosition        string
 	enPassantTarget      string
 }
 
@@ -101,8 +100,6 @@ func (m *Model) View() string {
 
 	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
 	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
-
-	footer += "\n" + m.mousePosition
 
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
