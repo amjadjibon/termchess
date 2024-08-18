@@ -5,9 +5,13 @@ Todo
 - [x] Setup board
 - [ ] Enforce chess rules
   * [x] Piece positions and movements using [Engine](https://github.com/notnil/chess)
-  * [ ] Castle (bug: add a check if it's castle or regular move)
+  * [x] Castle
   * [x] Pawn promotion
   * [x] En Passant
 - [ ] Save in `PGN` format (UCI + Algebraic)
+
+Bug
+- [ ] After promotion mouse does not work
+
 
 ![Board](docs/chess.png)
