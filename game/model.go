@@ -3,9 +3,11 @@ package game
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/notnil/chess"
@@ -81,6 +83,11 @@ func (m *Model) View() string {
 
 	header := labelStyle.Render("                      Terminal Chess\n")
 
+	// Render the PGN on the right side of the board
+	pgnSplit := splitPGN(m.gameEngine.String())
+	pgnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
+	pgnMoves := "\n" + pgnStyle.Render(strings.Join(pgnSplit, "\n"))
+
 	footer := ranks
 	footerSelectedPiece := lipgloss.NewStyle().
 		Background(lipgloss.Color("#ffffff")).
@@ -92,7 +99,6 @@ func (m *Model) View() string {
 
 	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
 	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
-	footer += "\n" + m.gameEngine.String()
 
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
@@ -100,6 +106,7 @@ func (m *Model) View() string {
 			lipgloss.Top,
 			lipgloss.JoinVertical(lipgloss.Left, "", files),
 			t.Render(),
+			pgnMoves,
 		),
 	) + footer
 }
@@ -186,22 +193,7 @@ func (m *Model) applyMove() {
 
 	// Handle pawn promotion
 	if canPiecePromote(m.selectedPiece, m.cursorY) {
-		move += "q"
-		if err := m.gameEngine.MoveStr(move); err != nil {
-			return
-		}
-
-		// Update the board manually based on the promotion
-		m.board.Set(m.selectedY, m.selectedX, Empty)
-		if m.selectedPiece.IsWhite() {
-			m.board.Set(m.cursorY, m.cursorX, WhiteQueen)
-		} else {
-			m.board.Set(m.cursorY, m.cursorX, BlackQueen)
-		}
-
-		m.selected = false
-		m.currentPlayer = m.currentPlayer.Switch()
-		return
+		move += m.handlePromotion()
 	}
 
 	if err := m.gameEngine.MoveStr(move); err != nil {
@@ -233,7 +225,7 @@ func (m *Model) applyMove() {
 	}
 
 	// Regular move
-	m.board.Replace(m.selectedY, m.selectedX, m.cursorY, m.cursorX)
+	m.board.Set(m.cursorY, m.cursorX, m.selectedPiece)
 	m.board.grid[m.selectedY][m.selectedX] = Empty
 	m.selected = false
 }
@@ -282,4 +274,95 @@ func canPiecePromote(piece Piece, targetY int) bool {
 	}
 
 	return false
+}
+
+func promotionForm() *huh.Select[string] {
+	return huh.NewSelect[string]().
+		Title("choose a piece").
+		Options(
+			huh.NewOption("Queen", "q"),
+			huh.NewOption("Rook", "r"),
+			huh.NewOption("Bishop", "b"),
+			huh.NewOption("Knight", "n"),
+		)
+}
+
+func (m *Model) handlePromotion() string {
+	form := promotionForm()
+	if err := form.Run(); err != nil {
+		return ""
+	}
+
+	var piece string
+	form.Value(&piece)
+
+	m.updateBoardForPromotion(piece)
+	return piece
+}
+
+func (m *Model) updateBoardForPromotion(piece string) {
+	promotedPiece := m.getPromotionPiece(piece)
+	m.selectedPiece = promotedPiece
+}
+
+func (m *Model) getPromotionPiece(piece string) Piece {
+	switch piece {
+	case "q":
+		if m.selectedPiece.IsWhite() {
+			return WhiteQueen
+		}
+		return BlackQueen
+	case "r":
+		if m.selectedPiece.IsWhite() {
+			return WhiteRook
+		}
+		return BlackRook
+	case "b":
+		if m.selectedPiece.IsWhite() {
+			return WhiteBishop
+		}
+		return BlackBishop
+	case "n":
+		if m.selectedPiece.IsWhite() {
+			return WhiteKnight
+		}
+		return BlackKnight
+	default:
+		// If for some reason an invalid piece is provided, return Empty
+		return Empty
+	}
+}
+
+func splitPGN(pgn string) []string {
+	// Regular expression to match move numbers (e.g., 1., 2., 3.)
+	re := regexp.MustCompile(`\d+\.`)
+
+	// Find all matches in the PGN string
+	matches := re.FindAllStringSubmatchIndex(pgn, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	var segments []string
+
+	// Initialize the start index for the first segment
+	start := matches[0][0]
+
+	// Extract and append each segment including the move numbers
+	for i := 1; i < len(matches); i++ {
+		end := matches[i][0]
+		segment := strings.TrimSpace(pgn[start:end])
+		if segment != "" {
+			segments = append(segments, segment)
+		}
+		start = end
+	}
+
+	// Append the last segment from the last move number to the end of the string
+	segment := strings.TrimSpace(pgn[start:])
+	if segment != "" {
+		segments = append(segments, segment)
+	}
+
+	return segments
 }
