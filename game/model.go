@@ -25,6 +25,7 @@ type Model struct {
 	selected             bool   // Whether a piece is selected
 	currentPlayer        Player
 	gameEngine           *chess.Game
+	mousePosition        string
 }
 
 func InitialModel() *Model {
@@ -100,6 +101,8 @@ func (m *Model) View() string {
 	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
 	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
 
+	footer += "\n" + m.mousePosition
+
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
 		lipgloss.JoinHorizontal(
@@ -130,6 +133,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
+	case tea.MouseMsg:
+		switch msgType.Action {
+		case tea.MouseActionPress:
+			m.handleMouseClick(msgType.X, msgType.Y)
+		default:
+
+		}
+
 	}
 
 	return m, nil
@@ -365,4 +376,20 @@ func splitPGN(pgn string) []string {
 	}
 
 	return segments
+}
+
+func (m *Model) handleMouseClick(x, y int) {
+	boardOffsetX := 2
+	boardOffsetY := 2
+	cellWidth := 7
+	cellHeight := 3
+
+	col := (x - boardOffsetX) / cellWidth
+	row := (y - boardOffsetY) / cellHeight
+
+	if col >= 0 && col < boardSize && row >= 0 && row < boardSize {
+		m.cursorX = col
+		m.cursorY = row
+		m.handleSelectOrMove()
+	}
 }

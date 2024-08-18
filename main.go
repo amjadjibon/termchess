@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// Start the TUI program
-	p := tea.NewProgram(game.InitialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(game.InitialModel(), tea.WithAltScreen(), tea.WithMouseAllMotion())
 	if _, err := p.Run(); err != nil {
 		panic(err)
 	}
