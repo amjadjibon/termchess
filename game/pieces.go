@@ -1,17 +1,5 @@
 package game
 
-import (
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	whitePieceStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#000000"))
-
-	blackPieceStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#000000"))
-)
-
 type Piece int
 
 const (
