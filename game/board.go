@@ -1,5 +1,9 @@
 package game
 
+import (
+	"fmt"
+)
+
 type Board struct {
 	grid [8][8]Piece
 }
@@ -29,6 +33,19 @@ func (b *Board) Display() [][]string {
 	}
 
 	return display
+}
+
+// Position converts board coordinates to chess notation (e.g., (6, 4) -> "e2")
+func (b *Board) Position(x, y int) string {
+	if x < 0 || x >= 8 || y < 0 || y >= 8 {
+		return ""
+	}
+
+	columns := "abcdefgh" // Column letters for chess notation
+	row := 8 - x          // Row numbers in chess notation
+	column := columns[y]  // Get the corresponding column letter
+
+	return fmt.Sprintf("%c%d", column, row) // Format as chess position
 }
 
 func NewBoard() *Board {

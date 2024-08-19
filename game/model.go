@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/notnil/chess"
+	"github.com/notnil/chess/opening"
 )
 
 const (
@@ -27,6 +28,7 @@ type Model struct {
 	currentPlayer        Player
 	gameEngine           *chess.Game
 	enPassantTarget      string
+	book                 opening.Book
 }
 
 func InitialModel() *Model {
@@ -37,6 +39,7 @@ func InitialModel() *Model {
 		selected:      false,
 		currentPlayer: PlayerWhite,
 		gameEngine:    chess.NewGame(chess.UseNotation(chess.UCINotation{})),
+		book:          opening.NewBookECO(),
 	}
 }
 
@@ -100,8 +103,19 @@ func (m *Model) View() string {
 			footerSelectedPiece.Render(m.selectedPiece.Render()))
 	}
 
-	footer += "\n\n\nCurrent player: " + m.currentPlayer.String()
-	footer += "\nPress 'q' or 'Ctrl+C' to quit.\n"
+	footer += "\nCurrent player: " + m.currentPlayer.String()
+	if moves := m.gameEngine.Moves(); moves != nil && len(moves) != 0 {
+		footer += "\nOpening: " + m.book.Find(moves).Title() + "\n"
+	}
+
+	footer += "\nValid Moves:"
+	for _, v := range m.gameEngine.ValidMoves() {
+		if m.board.Position(m.selectedY, m.selectedX) == v.S1().String() {
+			footer += " " + v.String()
+		}
+	}
+
+	footer += "\n\nPress 'q' or 'Ctrl+C' to quit.\n"
 
 	return header + lipgloss.JoinVertical(
 		lipgloss.Right,
