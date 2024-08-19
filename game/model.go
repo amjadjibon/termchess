@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -40,6 +41,7 @@ func InitialModel() *Model {
 }
 
 func (m *Model) Init() tea.Cmd {
+	slog.Info("new game started...")
 	return nil
 }
 
@@ -217,6 +219,10 @@ func (m *Model) applyMove() {
 	}
 
 	if err := m.gameEngine.MoveStr(move); err != nil {
+		slog.Error("error from engine",
+			"move", move,
+			"err", err,
+		)
 		return
 	}
 
