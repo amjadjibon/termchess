@@ -74,6 +74,10 @@ func (p Piece) IsKing() bool {
 	return p == 6 || p == 12
 }
 
+func (p Piece) IsRook() bool {
+	return p == 2 || p == 8
+}
+
 func (p Piece) Render() string {
 	switch p {
 	case WhitePawn, WhiteRook, WhiteKnight, WhiteBishop, WhiteQueen, WhiteKing:

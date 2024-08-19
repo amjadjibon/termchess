@@ -229,12 +229,9 @@ func (m *Model) applyMove() {
 		m.enPassantTarget = coordsToUCI(m.cursorX, (m.selectedY+m.cursorY)/2)
 	}
 
-	if kingRow, rookCol, kingNewCol, rookNewCol, valid := getCastlingPositions(move); valid {
-		if m.selectedPiece.IsKing() {
-			m.board.Replace(kingRow, rookCol, kingRow, kingNewCol) // Move the king
-			m.board.Replace(kingRow, rookCol, kingRow, rookNewCol) // Move the rook
-			return
-		}
+	if m.selectedPiece.IsKing() {
+		m.handleCastling(move)
+		return
 	}
 
 	// Regular move
@@ -396,18 +393,47 @@ func (m *Model) handleMouseClick(x, y int) {
 	}
 }
 
-func getCastlingPositions(move string) (kingRow, rookCol, kingNewCol, rookNewCol int, valid bool) {
+func (m *Model) handleCastling(move string) {
+	var kingRow, rookCol, kingNewCol, rookNewCol int
+
 	switch move {
 	case "e1g1": // White king-side castling
-		return 7, 7, 6, 5, true
+		if !m.board.Get(7, 7).IsRook() {
+			return
+		}
+
+		kingRow, rookCol, kingNewCol, rookNewCol = 7, 7, 6, 5
 	case "e1c1": // White queen-side castling
-		return 7, 0, 2, 3, true
+		if !m.board.Get(7, 0).IsRook() {
+			return
+		}
+
+		kingRow, rookCol, kingNewCol, rookNewCol = 7, 0, 2, 3
 	case "e8g8": // Black king-side castling
-		return 0, 7, 6, 5, true
+		if !m.board.Get(0, 7).IsRook() {
+			return
+		}
+
+		kingRow, rookCol, kingNewCol, rookNewCol = 0, 7, 6, 5
 	case "e8c8": // Black queen-side castling
-		return 0, 0, 2, 3, true
+		if !m.board.Get(0, 0).IsRook() {
+			return
+		}
+		kingRow, rookCol, kingNewCol, rookNewCol = 0, 0, 2, 3
+	default:
+		return // Invalid move for castling
 	}
-	return 0, 0, 0, 0, false // Invalid move, returns false
+
+	// Move the king and rook using the Set method
+	king := m.board.Get(kingRow, 4)
+	rook := m.board.Get(kingRow, rookCol)
+
+	m.board.Set(kingRow, kingNewCol, king)
+	m.board.Set(kingRow, rookNewCol, rook)
+
+	// Clear the original squares
+	m.board.Set(kingRow, 4, Empty)
+	m.board.Set(kingRow, rookCol, Empty)
 }
 
 func abs(a int) int {
