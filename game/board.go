@@ -35,19 +35,6 @@ func (b *Board) Display() [][]string {
 	return display
 }
 
-// Position converts board coordinates to chess notation (e.g., (6, 4) -> "e2")
-func (b *Board) Position(x, y int) string {
-	if x < 0 || x >= 8 || y < 0 || y >= 8 {
-		return ""
-	}
-
-	columns := "abcdefgh" // Column letters for chess notation
-	row := 8 - x          // Row numbers in chess notation
-	column := columns[y]  // Get the corresponding column letter
-
-	return fmt.Sprintf("%c%d", column, row) // Format as chess position
-}
-
 func NewBoard() *Board {
 	grid := [8][8]Piece{
 		{BlackRook, BlackKnight, BlackBishop, BlackQueen, BlackKing, BlackBishop, BlackKnight, BlackRook},
@@ -61,4 +48,36 @@ func NewBoard() *Board {
 	}
 
 	return &Board{grid: grid}
+}
+
+// Position converts board coordinates to chess notation (e.g., (6, 4) -> "e2")
+func Position(x, y int) string {
+	if x < 0 || x >= 8 || y < 0 || y >= 8 {
+		return ""
+	}
+
+	columns := "abcdefgh" // Column letters for chess notation
+	row := 8 - x          // Row numbers in chess notation
+	column := columns[y]  // Get the corresponding column letter
+
+	return fmt.Sprintf("%c%d", column, row) // Format as chess position
+}
+
+// Coordinates converts chess notation (e.g., "e2") to board coordinates (e.g., "e2" -> (6, 4)).
+func coordinates(pos string) (x, y int) {
+	if len(pos) != 2 {
+		panic("invalid position format")
+	}
+
+	// Convert column letter (a-h) to index (0-7)
+	y = int(pos[0] - 'a')
+
+	// Convert row number (1-8) to index (0-7)
+	x = 8 - int(pos[1]-'0')
+
+	if x < 0 || x >= 8 || y < 0 || y >= 8 {
+		panic("position out of bounds")
+	}
+
+	return x, y
 }

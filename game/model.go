@@ -1,10 +1,12 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,6 +31,10 @@ type Model struct {
 	gameEngine           *chess.Game
 	enPassantTarget      string
 	book                 opening.Book
+
+	numberOfMove int
+	validMoves   []*chess.Move
+	gameHistory  string
 }
 
 func InitialModel() *Model {
@@ -90,9 +96,8 @@ func (m *Model) View() string {
 	header := labelStyle.Render("                      Terminal Chess\n")
 
 	// Render the PGN on the right side of the board
-	pgnSplit := splitPGN(m.gameEngine.String())
 	pgnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
-	pgnMoves := "\n" + pgnStyle.Render(strings.Join(pgnSplit, "\n"))
+	pgnMoves := "\n" + pgnStyle.Render(m.gameHistory)
 
 	footer := ranks
 	footerSelectedPiece := lipgloss.NewStyle().
@@ -110,7 +115,7 @@ func (m *Model) View() string {
 
 	footer += "\nValid Moves:"
 	for _, v := range m.gameEngine.ValidMoves() {
-		if m.board.Position(m.selectedY, m.selectedX) == v.S1().String() {
+		if Position(m.selectedY, m.selectedX) == v.S1().String() {
 			footer += " " + v.String()
 		}
 	}
@@ -237,6 +242,10 @@ func (m *Model) applyMove() {
 		move += m.handlePromotion()
 	}
 
+	for _, v := range m.gameEngine.Moves() {
+		m.validMoves = append(m.validMoves, v)
+	}
+
 	if err := m.gameEngine.MoveStr(move); err != nil {
 		slog.Error("error from engine",
 			"move", move,
@@ -244,6 +253,9 @@ func (m *Model) applyMove() {
 		)
 		return
 	}
+
+	m.UpdateGameHistory(move)
+	m.validMoves = m.gameEngine.ValidMoves()
 
 	defer func() {
 		m.currentPlayer = m.currentPlayer.Switch()
@@ -254,7 +266,7 @@ func (m *Model) applyMove() {
 		m.enPassantTarget = coordsToUCI(m.cursorX, (m.selectedY+m.cursorY)/2)
 	}
 
-	if m.selectedPiece.IsKing() {
+	if m.selectedPiece.IsKing() && slices.Contains([]string{"e1g1", "e1c1", "e8g8", "e8c8"}, move) {
 		m.handleCastling(move)
 		return
 	}
@@ -466,4 +478,103 @@ func abs(a int) int {
 		return a
 	}
 	return -a
+}
+
+// unitAlgebraic converts UCI notation (e.g., "e2e4") to algebraic notation (e.g., "Ne4" or "e4").
+func (m *Model) unitAlgebraic(move string) (string, error) {
+	// Validate input length
+	if len(move) != 4 {
+		return "", errors.New("invalid UCI move format")
+	}
+
+	from := move[:2]
+	to := move[2:]
+
+	// Handle castling
+	if m.selectedPiece.IsKing() {
+		if from == "e1" && to == "g1" { // White king-side castling
+			return "O-O", nil
+		}
+		if from == "e1" && to == "c1" { // White queen-side castling
+			return "O-O-O", nil
+		}
+		if from == "e8" && to == "g8" { // Black king-side castling
+			return "O-O", nil
+		}
+		if from == "e8" && to == "c8" { // Black queen-side castling
+			return "O-O-O", nil
+		}
+	}
+
+	// Convert the move to algebraic notation
+	var algebraicMove string
+
+	if m.selectedPiece.IsPawn() {
+		// Handle pawn captures (e.g., "exd5")
+		if !m.board.Get(m.cursorY, m.cursorX).IsEmpty() {
+			algebraicMove = string(from[0]) + "x" + to
+		} else {
+			algebraicMove = to
+		}
+	} else if m.selectedPiece.IsKnight() || m.selectedPiece.IsRook() || m.selectedPiece.IsQueen() {
+		algebraicMove += m.selectedPiece.Name()
+
+		ambiguous := 0
+		for _, pm := range m.validMoves {
+			if pm.S2().String() != to {
+				continue
+			}
+
+			if m.board.Get(coordinates(pm.S1().String())) == m.board.Get(coordinates(from)) {
+				ambiguous++
+			}
+		}
+
+		if ambiguous > 1 {
+			algebraicMove += string(from[0])
+		}
+		if !m.board.Get(m.cursorY, m.cursorX).IsEmpty() {
+			algebraicMove += "x"
+		}
+
+		algebraicMove += to
+	} else {
+		// Handle captures and piece moves (e.g., "Nxf3", "Qd2")
+		if !m.board.Get(m.cursorY, m.cursorX).IsEmpty() {
+			algebraicMove = m.selectedPiece.Name() + "x" + to
+		} else {
+			algebraicMove = m.selectedPiece.Name() + to
+		}
+	}
+
+	return algebraicMove, nil
+}
+
+// UpdateGameHistory updates the move history in the desired format like "1. e4 e5 2. ...".
+func (m *Model) UpdateGameHistory(move string) {
+	m.numberOfMove += 1 // Increment the move count
+
+	// Convert UCI notation to algebraic notation
+	position, err := m.unitAlgebraic(move)
+	if err != nil {
+		slog.Error("error from engine",
+			"move", move,
+			"err", err,
+		)
+		return
+	}
+
+	// Determine if it's white's or black's move based on move number
+	moveNumber := (m.numberOfMove + 1) / 2 // The actual move number in the game
+
+	// If it's white's move
+	if m.numberOfMove%2 == 1 {
+		// Start a new line with the move number
+		m.gameHistory += fmt.Sprintf("\n%d. %s", moveNumber, position)
+	} else { // If it's black's move
+		// Append to the existing line
+		m.gameHistory += fmt.Sprintf(" %s", position)
+	}
+
+	// Example output: "1. e4 e5\n2. Nf3 Nc6"
 }
