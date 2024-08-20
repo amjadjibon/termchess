@@ -212,6 +212,11 @@ func (m *Model) canApplyMove() bool {
 }
 
 func (m *Model) applyMove() {
+	if m.selectedX == m.cursorX && m.selectedY == m.cursorY {
+		m.selected = false
+		return
+	}
+
 	from := coordsToUCI(m.selectedX, m.selectedY)
 	to := coordsToUCI(m.cursorX, m.cursorY)
 	move := from + to
