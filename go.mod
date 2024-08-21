@@ -2,6 +2,8 @@ module termchess
 
 go 1.23
 
+replace github.com/notnil/chess v1.9.0 => ../chess
+
 require (
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/huh v0.5.2

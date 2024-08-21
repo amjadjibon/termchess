@@ -81,7 +81,9 @@ func (m *Model) View() string {
 
 	// Labels for ranks (1-8) and files (a-h)
 	labelStyle := re.NewStyle().Foreground(lipgloss.Color("241")).Align(lipgloss.Center)
-	ranks := labelStyle.Render(strings.Join([]string{"\n      a", "b", "c", "d", "e", "f", "g", "h"}, "      "))
+	ranks := labelStyle.Render(
+		strings.Join([]string{"\n      a", "b", "c", "d", "e", "f", "g", "h"}, "      "),
+	)
 	files := strings.Join([]string{
 		labelStyle.Render("\n 8"),
 		labelStyle.Render("\n\n 7"),
@@ -544,6 +546,19 @@ func (m *Model) unitAlgebraic(move string) (string, error) {
 			algebraicMove = m.selectedPiece.Name() + "x" + to
 		} else {
 			algebraicMove = m.selectedPiece.Name() + to
+		}
+	}
+
+	if outcome := m.gameEngine.Outcome(); outcome != chess.NoOutcome {
+		switch outcome {
+		case chess.WhiteWon, chess.BlackWon:
+			algebraicMove += "# " + outcome.String()
+		case chess.Draw:
+			algebraicMove += " " + outcome.String()
+		}
+	} else {
+		if chess.IsInCheck(m.gameEngine.Position()) {
+			algebraicMove += "+"
 		}
 	}
 
