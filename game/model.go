@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -15,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/notnil/chess"
 	"github.com/notnil/chess/opening"
+	"github.com/notnil/chess/uci"
 )
 
 const (
@@ -35,9 +37,12 @@ type Model struct {
 	numberOfMove int
 	validMoves   []*chess.Move
 	gameHistory  string
+
+	chessEngine *uci.Engine
 }
 
-func InitialModel() *Model {
+func InitialModel(eng *uci.Engine) *Model {
+
 	return &Model{
 		board:         NewBoard(),
 		cursorX:       4, // Column 'e'
@@ -46,6 +51,7 @@ func InitialModel() *Model {
 		currentPlayer: PlayerWhite,
 		gameEngine:    chess.NewGame(chess.UseNotation(chess.UCINotation{})),
 		book:          opening.NewBookECO(),
+		chessEngine:   eng,
 	}
 }
 
@@ -115,12 +121,25 @@ func (m *Model) View() string {
 		footer += "\nOpening: " + m.book.Find(moves).Title() + "\n"
 	}
 
-	footer += "\nValid Moves:"
-	for _, v := range m.gameEngine.ValidMoves() {
-		if Position(m.selectedY, m.selectedX) == v.S1().String() {
-			footer += " " + v.String()
+	if m.selected {
+		footer += "\nValid Moves:"
+		for _, v := range m.gameEngine.ValidMoves() {
+			if Position(m.selectedY, m.selectedX) == v.S1().String() {
+				footer += " " + v.String()
+			}
 		}
 	}
+
+	cmdPos := uci.CmdPosition{Position: m.gameEngine.Position()}
+	cmdGo := uci.CmdGo{MoveTime: time.Second / 100}
+	if err := m.chessEngine.Run(cmdPos, cmdGo); err != nil {
+		panic(err)
+	}
+	result := m.chessEngine.SearchResults()
+	footer += "\n" + fmt.Sprintf("Best Move: %s, Ponder: %s\n",
+		result.BestMove,
+		result.Ponder,
+	)
 
 	footer += "\n\nPress 'q' or 'Ctrl+C' to quit.\n"
 

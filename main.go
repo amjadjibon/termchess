@@ -5,6 +5,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/notnil/chess/uci"
 
 	"termchess/game"
 )
@@ -23,8 +24,20 @@ func main() {
 	slog.SetLogLoggerLevel(slog.LevelInfo)
 	slog.SetDefault(logger)
 
+	// set up engine to use stockfish exe
+	eng, err := uci.New("stockfish/stockfish")
+	if err != nil {
+		panic(err)
+	}
+	defer eng.Close()
+
+	// initialize uci with new game
+	if err := eng.Run(uci.CmdUCI, uci.CmdIsReady, uci.CmdUCINewGame); err != nil {
+		panic(err)
+	}
+
 	// Start the TUI program
-	p := tea.NewProgram(game.InitialModel(), tea.WithAltScreen(), tea.WithMouseAllMotion())
+	p := tea.NewProgram(game.InitialModel(eng), tea.WithAltScreen(), tea.WithMouseAllMotion())
 	if _, err = p.Run(); err != nil {
 		panic(err)
 	}
