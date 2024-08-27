@@ -168,6 +168,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.moveCursorDown()
 		case "enter", " ":
 			m.handleSelectOrMove()
+		case "i":
+			m.handleInputFromKeyboard()
 		case "esc":
 			m.deselectPiece()
 		case "q", "ctrl+c":
@@ -214,9 +216,57 @@ func (m *Model) deselectPiece() {
 	m.selected = false
 }
 
+func (m *Model) handleInputFromKeyboard() {
+	// Prompt the user to enter a move in UCI format (e.g., "e2e4")
+	form := huh.NewInput().
+		Title("Enter your move (e.g., e2e4):").
+		Placeholder("e2e4").
+		Validate(func(input string) error {
+			if len(input) != 4 {
+				return errors.New("move must be in the format 'e2e4'")
+			}
+
+			// Check if input contains valid positions
+			if !isValidUCI(input[:2]) || !isValidUCI(input[2:]) {
+				return errors.New("invalid positions in move")
+			}
+
+			return nil
+		})
+
+	var move string
+	form.Value(&move)
+
+	if err := form.Run(); err != nil {
+		slog.Error("input error", "err", err)
+		return
+	}
+
+	// Apply the move if it's valid
+	from := move[:2]
+	to := move[2:]
+
+	m.selectedX, m.selectedY = coordinates(from)
+	m.cursorX, m.cursorY = coordinates(to)
+
+	m.selectPiece()
+	m.applyMove(from, to)
+}
+
+// isValidUCI checks if the given UCI notation represents a valid position on the board.
+func isValidUCI(pos string) bool {
+	if len(pos) != 2 {
+		return false
+	}
+	file, rank := pos[0], pos[1]
+	return file >= 'a' && file <= 'h' && rank >= '1' && rank <= '8'
+}
+
 func (m *Model) handleSelectOrMove() {
 	if m.selected {
-		m.applyMove()
+		from := coordsToUCI(m.selectedX, m.selectedY)
+		to := coordsToUCI(m.cursorX, m.cursorY)
+		m.applyMove(from, to)
 	} else {
 		m.selectPiece()
 	}
@@ -237,14 +287,12 @@ func (m *Model) canApplyMove() bool {
 	return true
 }
 
-func (m *Model) applyMove() {
+func (m *Model) applyMove(from, to string) {
 	if m.selectedX == m.cursorX && m.selectedY == m.cursorY {
 		m.selected = false
 		return
 	}
 
-	from := coordsToUCI(m.selectedX, m.selectedY)
-	to := coordsToUCI(m.cursorX, m.cursorY)
 	move := from + to
 
 	// Handle en passant
