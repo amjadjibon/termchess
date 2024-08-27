@@ -38,3 +38,9 @@ bin/
 
 # Engine
 stockfish/
+
+# OSX
+.DS_Store
+
+# Testing
+testing/
